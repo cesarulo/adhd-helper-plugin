@@ -52,7 +52,7 @@ into the file. This preserves ordering, unknown keys, comments, and body.
 
 ### P0-3: Error handling on vault reads and writes
 
-- [ ] **Assigned:** ___
+- [x] **Assigned:** cesarulo
 
 **What's broken:** `vault.read`, `vault.modify`, and `vault.create`
 (lines 321, 336, 369) have no try/catch. A transient file lock, permission

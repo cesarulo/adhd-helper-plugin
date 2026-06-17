@@ -318,9 +318,14 @@ class MissionControlView extends ItemView {
   }
 
   async updateGoalStatus(goal: GoalEntry, status: GoalStatus, dropReason?: DropReason) {
-    const content = await this.plugin.app.vault.read(goal.file);
-    const newContent = this.patchFrontmatter(content, status, dropReason);
-    await this.plugin.app.vault.modify(goal.file, newContent);
+    try {
+      const content = await this.plugin.app.vault.read(goal.file);
+      const newContent = this.patchFrontmatter(content, status, dropReason);
+      await this.plugin.app.vault.modify(goal.file, newContent);
+    } catch (e) {
+      console.error("ADHD Helper: failed to update goal status", e);
+      new Notice("Could not update goal — check the console for details.");
+    }
   }
 
   patchFrontmatter(content: string, status: GoalStatus, dropReason?: DropReason): string {
@@ -372,6 +377,9 @@ Describe your goal here.
 `;
     this.plugin.app.vault.create(path, template).then((file) => {
       this.plugin.app.workspace.openLinkText(file.path, "", false);
+    }).catch((e) => {
+      console.error("ADHD Helper: failed to create goal file", e);
+      new Notice("Could not create goal — check the console for details.");
     });
   }
 
