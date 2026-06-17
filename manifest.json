@@ -1,0 +1,9 @@
+{
+  "id": "adhd-helper",
+  "name": "ADHD Helper",
+  "version": "0.1.0",
+  "minAppVersion": "1.5.0",
+  "description": "Mission control for life areas, goals, and ADHD-friendly daily planning",
+  "author": "cesarulo",
+  "isDesktopOnly": false
+}
