@@ -37,8 +37,6 @@ const UI = {
   planWeek: "Plan This Week",
   weekExists: (path: string) => `Week plan already exists: ${path}`,
   dayNames: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"],
-  dashboardTitle: "Dashboard",
-  dashboardTotal: "Total goals: ",
 };
 
 type Origin = "endogenous" | "exogenous";
@@ -547,7 +545,7 @@ class DashboardView extends ItemView {
   }
 
   getViewType(): string { return VIEW_TYPE_DASHBOARD; }
-  getDisplayText(): string { return UI.dashboardTitle; }
+  getDisplayText(): string { return "Dashboard"; }
   getIcon(): string { return "bar-chart-3"; }
 
   async onOpen() {
@@ -569,8 +567,8 @@ class DashboardView extends ItemView {
     const goals = await this.plugin.loadGoals();
     const total = goals.length;
 
-    container.createEl("h2", { text: UI.dashboardTitle });
-    container.createEl("p", { text: UI.dashboardTotal + total, cls: "adhd-db-subtitle" });
+    container.createEl("h2", { text: "Dashboard" });
+    container.createEl("p", { text: `Total goals: ${total}`, cls: "adhd-db-subtitle" });
     if (total === 0) return;
 
     // By area
@@ -598,25 +596,25 @@ class DashboardView extends ItemView {
       }
     }
 
-    this.renderSection(container, UI.dashboardAreas, 
+    this.renderSection(container, "By Area", 
       [...areas.entries()].map(([name, c]) => `${name}: ${c.active}A / ${c.dropped}D / ${c.fulfilled}F`));
 
-    this.renderSection(container, UI.dashboardOrigin,
-      [`${UI.dashboardEndogenous}: ${endogenous} (${Math.round(endogenous/total*100)}%)`,
-       `${UI.dashboardExogenous}: ${exogenous} (${Math.round(exogenous/total*100)}%)`]);
+    this.renderSection(container, "By Origin",
+      [`Endogenous: ${endogenous} (${Math.round(endogenous/total*100)}%)`,
+       `Exogenous: ${exogenous} (${Math.round(exogenous/total*100)}%)`]);
 
-    this.renderSection(container, UI.dashboardCadence,
-      [`${UI.dashboardRecurring}: ${recurring}`,
-       `${UI.dashboardOneOff}: ${oneOff}`]);
+    this.renderSection(container, "By Cadence",
+      [`Recurring: ${recurring}`,
+       `One-off: ${oneOff}`]);
 
     if (nonDeferrable > 0 || deferrable > 0) {
-      this.renderSection(container, UI.dashboardDeferrability || "By Deferrability",
-        [`${UI.dashboardDeferrable || "Deferrable"}: ${deferrable}`,
-         `${UI.dashboardNonDeferrable || "Non-deferrable"}: ${nonDeferrable}`]);
+      this.renderSection(container, "By Deferrability",
+        [`Deferrable: ${deferrable}`,
+         `Non-deferrable: ${nonDeferrable}`]);
     }
 
     if (dropReasons.size > 0) {
-      this.renderSection(container, UI.dashboardDropped || "Dropped Goals",
+      this.renderSection(container, "Dropped Goals",
         [...dropReasons.entries()].map(([r, n]) => `${r}: ${n}`));
     }
   }
