@@ -1,4 +1,4 @@
-import { App, Modal, Plugin, PluginSettingTab, Setting, WorkspaceLeaf, ItemView, TFile, FrontMatterCache, Notice } from "obsidian";
+import { App, Modal, Plugin, PluginSettingTab, Setting, WorkspaceLeaf, ItemView, TFile, Notice } from "obsidian";
 
 // ---------------------------------------------------------------------------
 // Types
