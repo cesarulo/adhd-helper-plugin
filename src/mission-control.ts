@@ -5,6 +5,7 @@ import { weekPlanPath, weekPlanContent } from "./plan-generator";
 import { ensureFolder } from "./plugin";
 import { DropReasonModal } from "./drop-reason-modal";
 import { patchFrontmatter } from "./frontmatter";
+import { getScoredAreas } from "./dataview";
 
 export const VIEW_TYPE_MISSION_CONTROL = "adhd-mission-control";
 
@@ -290,7 +291,10 @@ Describe your goal here.
       new Notice(UI.weekExists(path));
       return;
     }
-    const content = weekPlanContent(areas);
+
+    const scored = await getScoredAreas(this.plugin.app);
+    const prepopulatedAreas = scored.length > 0 ? scored.map(s => s.area) : undefined;
+    const content = weekPlanContent(areas, prepopulatedAreas);
     try {
       const dir = path.substring(0, path.lastIndexOf("/"));
       await ensureFolder(this.plugin.app.vault, dir);
