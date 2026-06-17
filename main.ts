@@ -89,6 +89,18 @@ class MissionControlView extends ItemView {
     const goals = await this.plugin.loadGoals();
     const areas = this.groupByArea(goals);
 
+    if (areas.length === 0) {
+      const empty = container.createDiv("adhd-mc-empty");
+      empty.createEl("h3", { text: "No goals yet" });
+      empty.createEl("p", { text: "Add your first goal to get started." });
+      const addBtn = container.createDiv("adhd-mc-add-btn");
+      addBtn.createEl("button", {
+        text: "+ Add Goal",
+        cls: "mod-cta"
+      }).addEventListener("click", () => this.openGoalCreator());
+      return;
+    }
+
     const topBar = container.createDiv("adhd-mc-top-bar");
     this.renderHeader(topBar);
     this.renderAreaCards(topBar, areas);

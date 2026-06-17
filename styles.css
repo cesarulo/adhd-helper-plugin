@@ -259,3 +259,13 @@
   margin-bottom: 8px;
   text-align: left;
 }
+
+/* Empty state */
+.adhd-mc-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+}
+.adhd-mc-empty h3 {
+  margin-bottom: 8px;
+}
