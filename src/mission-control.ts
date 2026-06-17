@@ -1,9 +1,10 @@
 import { App, WorkspaceLeaf, ItemView, Notice, TFile } from "obsidian";
-import { AreaSummary, GoalEntry, GoalStatus, DropReason, GoalFrontmatter } from "./types";
+import { AreaSummary, GoalEntry, GoalStatus, DropReason } from "./types";
 import { UI, GOALS_FOLDER } from "./ui-strings";
 import { weekPlanPath, weekPlanContent } from "./plan-generator";
 import { ensureFolder } from "./plugin";
 import { DropReasonModal } from "./drop-reason-modal";
+import { patchFrontmatter } from "./frontmatter";
 
 export const VIEW_TYPE_MISSION_CONTROL = "adhd-mission-control";
 
@@ -321,36 +322,4 @@ Describe your goal here.
     summaries.sort((a, b) => b.activeCount - a.activeCount);
     return summaries;
   }
-}
-
-/** Pure function: patch YAML frontmatter with new status/dropReason. Exported for testing. */
-export function patchFrontmatter(content: string, status: GoalStatus, dropReason?: DropReason): string {
-  const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
-  if (!fmMatch) return content;
-
-  const fmBlock = fmMatch[1];
-  const before = content.substring(0, fmMatch.index!);
-  const after = content.substring(fmMatch.index! + fmMatch[0].length);
-
-  let lines = fmBlock.split("\n");
-  const hasStatus = lines.some(l => /^\s*status:/.test(l));
-  const hasDropReason = lines.some(l => /^\s*dropReason:/.test(l));
-
-  if (hasStatus) {
-    lines = lines.map(l => /^\s*status:/.test(l) ? `status: ${status}` : l);
-  } else {
-    lines.push(`status: ${status}`);
-  }
-
-  if (status === "dropped" && dropReason) {
-    if (hasDropReason) {
-      lines = lines.map(l => /^\s*dropReason:/.test(l) ? `dropReason: ${dropReason}` : l);
-    } else {
-      lines.push(`dropReason: ${dropReason}`);
-    }
-  } else {
-    lines = lines.filter(l => !/^\s*dropReason:/.test(l));
-  }
-
-  return before + "---\n" + lines.join("\n") + "\n---" + after;
 }
