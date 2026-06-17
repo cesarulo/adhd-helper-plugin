@@ -6,6 +6,36 @@ import { App, Modal, Plugin, PluginSettingTab, Setting, WorkspaceLeaf, ItemView,
 
 const GOALS_FOLDER = "Goals";
 
+const UI = {
+  viewTitle: "Mission Control",
+  viewSubtitle: "What are you working toward? What have you let go of?",
+  emptyTitle: "No goals yet",
+  emptyBody: "Add your first goal to get started.",
+  addGoal: "+ Add Goal",
+  areaActive: (n: number) => `${n} active`,
+  areaDropped: (n: number) => `${n} dropped`,
+  sectionActive: "Active",
+  sectionDropped: (n: number) => `Dropped (${n})`,
+  sectionFulfilled: "Fulfilled",
+  toggleShow: "Show",
+  toggleHide: "Hide",
+  goalOrigin: (o: Origin) => o === "endogenous" ? "para mí" : "externo",
+  goalCadence: (c: Cadence) => c === "recurring" ? "recurrente" : "one-off",
+  taskLabel: "Daily tasks:",
+  taskTimingLabel: (t: TaskTiming) => t === "timed" ? "timed" : "flex",
+  taskNoPunt: "no punt",
+  btnDrop: "Drop",
+  btnFulfill: "Fulfill",
+  btnEdit: "Edit",
+  btnReactivate: "Reactivate",
+  doneBadge: "✓ done",
+  sourcePrefix: "Source: ",
+  dropDialogTitle: "Why are you dropping this goal?",
+  errorUpdateGoal: "Could not update goal — check the console for details.",
+  errorCreateGoal: "Could not create goal — check the console for details.",
+  logPrefix: "ADHD Helper: ",
+};
+
 type Origin = "endogenous" | "exogenous";
 type Cadence = "recurring" | "one-off";
 type GoalStatus = "active" | "dropped" | "fulfilled";
@@ -70,7 +100,7 @@ class MissionControlView extends ItemView {
   }
 
   getDisplayText(): string {
-    return "Mission Control";
+    return UI.viewTitle;
   }
 
   getIcon(): string {
@@ -91,11 +121,11 @@ class MissionControlView extends ItemView {
 
     if (areas.length === 0) {
       const empty = container.createDiv("adhd-mc-empty");
-      empty.createEl("h3", { text: "No goals yet" });
-      empty.createEl("p", { text: "Add your first goal to get started." });
+      empty.createEl("h3", { text: UI.emptyTitle });
+      empty.createEl("p", { text: UI.emptyBody });
       const addBtn = container.createDiv("adhd-mc-add-btn");
       addBtn.createEl("button", {
-        text: "+ Add Goal",
+        text: UI.addGoal,
         cls: "mod-cta"
       }).addEventListener("click", () => this.openGoalCreator());
       return;
@@ -111,16 +141,16 @@ class MissionControlView extends ItemView {
 
     const addBtn = container.createDiv("adhd-mc-add-btn");
     addBtn.createEl("button", {
-      text: "+ Add Goal",
+      text: UI.addGoal,
       cls: "mod-cta"
     }).addEventListener("click", () => this.openGoalCreator());
   }
 
   private renderHeader(topBar: HTMLElement) {
     const header = topBar.createDiv("adhd-mc-header");
-    header.createEl("h2", { text: "Mission Control" });
+    header.createEl("h2", { text: UI.viewTitle });
     header.createEl("p", { 
-      text: "What are you working toward? What have you let go of?",
+      text: UI.viewSubtitle,
       cls: "adhd-mc-subtitle" 
     });
   }
@@ -135,12 +165,12 @@ class MissionControlView extends ItemView {
       });
       card.createEl("strong", { text: area.name, cls: "adhd-mc-area-name" });
       card.createEl("span", { 
-        text: `${area.activeCount} active`,
+        text: UI.areaActive(area.activeCount),
         cls: "adhd-mc-area-stat" 
       });
       if (area.droppedCount > 0) {
         card.createEl("span", { 
-          text: `${area.droppedCount} dropped`,
+          text: UI.areaDropped(area.droppedCount),
           cls: "adhd-mc-area-stat adhd-mc-dropped-stat" 
         });
       }
@@ -164,7 +194,7 @@ class MissionControlView extends ItemView {
     const activeGoals = area.goals.filter(g => g.fm.status === "active");
     if (activeGoals.length > 0) {
       const activeSection = section.createDiv("adhd-mc-goal-group");
-      activeSection.createEl("h4", { text: "Active" });
+      activeSection.createEl("h4", { text: UI.sectionActive });
       for (const goal of activeGoals) {
         this.renderGoalCard(activeSection, goal);
       }
@@ -175,10 +205,10 @@ class MissionControlView extends ItemView {
     if (droppedGoals.length > 0) {
       const dropSection = section.createDiv("adhd-mc-goal-group adhd-mc-dropped-group");
       const dropHeader = dropSection.createDiv("adhd-mc-dropped-header");
-      dropHeader.createEl("h4", { text: `Dropped (${droppedGoals.length})` });
+      dropHeader.createEl("h4", { text: UI.sectionDropped(droppedGoals.length) });
       
       const toggleBtn = dropHeader.createEl("button", { 
-        text: "Show",
+        text: UI.toggleShow,
         cls: "adhd-mc-toggle-btn" 
       });
       
@@ -188,7 +218,7 @@ class MissionControlView extends ItemView {
       toggleBtn.addEventListener("click", () => {
         const hidden = dropContent.style.display === "none";
         dropContent.style.display = hidden ? "block" : "none";
-        toggleBtn.setText(hidden ? "Hide" : "Show");
+        toggleBtn.setText(hidden ? UI.toggleHide : UI.toggleShow);
       });
 
       for (const goal of droppedGoals) {
@@ -200,11 +230,11 @@ class MissionControlView extends ItemView {
     const fulfilledGoals = area.goals.filter(g => g.fm.status === "fulfilled");
     if (fulfilledGoals.length > 0) {
       const fulSection = section.createDiv("adhd-mc-goal-group");
-      fulSection.createEl("h4", { text: "Fulfilled" });
+      fulSection.createEl("h4", { text: UI.sectionFulfilled });
       for (const goal of fulfilledGoals) {
         const card = fulSection.createDiv("adhd-mc-goal-card adhd-mc-fulfilled");
         card.createEl("span", { text: goal.title, cls: "adhd-mc-goal-title" });
-        card.createEl("span", { text: "✓ done", cls: "adhd-mc-badge adhd-mc-badge-fulfilled" });
+        card.createEl("span", { text: UI.doneBadge, cls: "adhd-mc-badge adhd-mc-badge-fulfilled" });
       }
     }
   }
@@ -217,18 +247,18 @@ class MissionControlView extends ItemView {
     row1.createEl("span", { text: goal.title, cls: "adhd-mc-goal-title" });
     
     // Origin badge
-    const originLabel = goal.fm.origin === "endogenous" ? "para mí" : "externo";
+    const originLabel = UI.goalOrigin(goal.fm.origin);
     const originCls = goal.fm.origin === "endogenous" ? "adhd-mc-badge-endo" : "adhd-mc-badge-exo";
     row1.createEl("span", { text: originLabel, cls: `adhd-mc-badge ${originCls}` });
     
     // Cadence badge
-    const cadLabel = goal.fm.cadence === "recurring" ? "recurrente" : "one-off";
+    const cadLabel = UI.goalCadence(goal.fm.cadence);
     row1.createEl("span", { text: cadLabel, cls: "adhd-mc-badge adhd-mc-badge-cadence" });
 
     // Recurring tasks
     if (goal.fm.cadence === "recurring" && goal.fm.recurringTasks && goal.fm.recurringTasks.length > 0) {
       const tasksSection = card.createDiv("adhd-mc-recurring-tasks");
-      tasksSection.createEl("small", { text: "Daily tasks:", cls: "adhd-mc-tasks-label" });
+      tasksSection.createEl("small", { text: UI.taskLabel, cls: "adhd-mc-tasks-label" });
       for (const task of goal.fm.recurringTasks) {
         const taskRow = tasksSection.createDiv("adhd-mc-task-row");
         const timeStr = task.timing === "timed" && task.startTime 
@@ -239,10 +269,10 @@ class MissionControlView extends ItemView {
           cls: "adhd-mc-task-desc" 
         });
         if (!task.isPuntable) {
-          taskRow.createEl("span", { text: "no punt", cls: "adhd-mc-badge adhd-mc-badge-nopunt" });
+          taskRow.createEl("span", { text: UI.taskNoPunt, cls: "adhd-mc-badge adhd-mc-badge-nopunt" });
         }
         taskRow.createEl("span", { 
-          text: task.timing === "timed" ? "timed" : "flex",
+          text: UI.taskTimingLabel(task.timing),
           cls: "adhd-mc-badge adhd-mc-badge-timing" 
         });
       }
@@ -251,7 +281,7 @@ class MissionControlView extends ItemView {
     // Source note
     if (goal.fm.sourceNote) {
       card.createEl("small", { 
-        text: `Source: ${goal.fm.sourceNote}`,
+        text: UI.sourcePrefix + goal.fm.sourceNote,
         cls: "adhd-mc-source-note" 
       });
     }
@@ -260,17 +290,17 @@ class MissionControlView extends ItemView {
     const actions = card.createDiv("adhd-mc-actions");
     
     // Drop button
-    actions.createEl("button", { text: "Drop", cls: "adhd-mc-action-btn adhd-mc-drop-btn" })
+    actions.createEl("button", { text: UI.btnDrop, cls: "adhd-mc-action-btn adhd-mc-drop-btn" })
       .addEventListener("click", () => this.showDropDialog(goal));
 
     // Fulfill button (for one-off goals)
     if (goal.fm.cadence === "one-off") {
-      actions.createEl("button", { text: "Fulfill", cls: "adhd-mc-action-btn" })
+      actions.createEl("button", { text: UI.btnFulfill, cls: "adhd-mc-action-btn" })
         .addEventListener("click", () => this.fulfillGoal(goal));
     }
 
     // Edit button
-    actions.createEl("button", { text: "Edit", cls: "adhd-mc-action-btn" })
+    actions.createEl("button", { text: UI.btnEdit, cls: "adhd-mc-action-btn" })
       .addEventListener("click", () => this.plugin.app.workspace.openLinkText(goal.file.path, "", false));
   }
 
@@ -288,10 +318,10 @@ class MissionControlView extends ItemView {
 
     // Reactivate
     const actions = card.createDiv("adhd-mc-actions");
-    actions.createEl("button", { text: "Reactivate", cls: "adhd-mc-action-btn" })
+    actions.createEl("button", { text: UI.btnReactivate, cls: "adhd-mc-action-btn" })
       .addEventListener("click", () => this.reactivateGoal(goal));
     
-    actions.createEl("button", { text: "Edit", cls: "adhd-mc-action-btn" })
+    actions.createEl("button", { text: UI.btnEdit, cls: "adhd-mc-action-btn" })
       .addEventListener("click", () => this.plugin.app.workspace.openLinkText(goal.file.path, "", false));
   }
 
@@ -341,8 +371,8 @@ class MissionControlView extends ItemView {
       const newContent = this.patchFrontmatter(content, status, dropReason);
       await this.plugin.app.vault.modify(goal.file, newContent);
     } catch (e) {
-      console.error("ADHD Helper: failed to update goal status", e);
-      new Notice("Could not update goal — check the console for details.");
+      console.error(UI.logPrefix + "failed to update goal status", e);
+      new Notice(UI.errorUpdateGoal);
     }
   }
 
@@ -396,8 +426,8 @@ Describe your goal here.
     this.plugin.app.vault.create(path, template).then((file) => {
       this.plugin.app.workspace.openLinkText(file.path, "", false);
     }).catch((e) => {
-      console.error("ADHD Helper: failed to create goal file", e);
-      new Notice("Could not create goal — check the console for details.");
+      console.error(UI.logPrefix + "failed to create goal file", e);
+      new Notice(UI.errorCreateGoal);
     });
   }
 
@@ -442,7 +472,7 @@ class DropReasonModal extends Modal {
 
   onOpen() {
     const { contentEl } = this;
-    contentEl.createEl("h3", { text: "Why are you dropping this goal?" });
+    contentEl.createEl("h3", { text: UI.dropDialogTitle });
     
     for (const reason of this.reasons) {
       contentEl.createEl("button", {
