@@ -1,0 +1,37 @@
+import { Origin, Cadence, TaskTiming } from "./types";
+
+export const GOALS_FOLDER = "Goals";
+
+export const UI = {
+  viewTitle: "Mission Control",
+  viewSubtitle: "What are you working toward? What have you let go of?",
+  emptyTitle: "No goals yet",
+  emptyBody: "Add your first goal to get started.",
+  addGoal: "+ Add Goal",
+  areaActive: (n: number) => `${n} active`,
+  areaDropped: (n: number) => `${n} dropped`,
+  sectionActive: "Active",
+  sectionDropped: (n: number) => `Dropped (${n})`,
+  sectionFulfilled: "Fulfilled",
+  toggleShow: "Show",
+  toggleHide: "Hide",
+  goalOrigin: (o: Origin) => o === "endogenous" ? "para mí" : "externo",
+  goalCadence: (c: Cadence) => c === "recurring" ? "recurrente" : "one-off",
+  taskLabel: "Daily tasks:",
+  taskTimingLabel: (t: TaskTiming) => t === "timed" ? "timed" : "flex",
+  taskNoPunt: "no punt",
+  btnDrop: "Drop",
+  btnFulfill: "Fulfill",
+  btnEdit: "Edit",
+  btnReactivate: "Reactivate",
+  doneBadge: "✓ done",
+  sourcePrefix: "Source: ",
+  dropDialogTitle: "Why are you dropping this goal?",
+  errorUpdateGoal: "Could not update goal — check the console for details.",
+  errorCreateGoal: "Could not create goal — check the console for details.",
+  logPrefix: "ADHD Helper: ",
+  planWeek: "Plan This Week",
+  weekExists: (path: string) => `Week plan already exists: ${path}`,
+  dayNames: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"],
+  dataviewMissing: "The Dataview plugin is required for this feature. Please install it from Community Plugins.",
+};
