@@ -13,6 +13,7 @@ export const VIEW_TYPE_MISSION_CONTROL = "adhd-mission-control";
 export interface MCPlugin {
   app: App;
   loadGoals(): Promise<GoalEntry[]>;
+  populateToday(): Promise<void>;
 }
 
 export class MissionControlView extends ItemView {
@@ -304,6 +305,7 @@ Describe your goal here.
       await ensureFolder(this.plugin.app.vault, dir);
       const file = await this.plugin.app.vault.create(path, content);
       await this.plugin.app.workspace.openLinkText(file.path, "", false);
+      await this.plugin.populateToday();
     } catch (e) {
       console.error(UI.logPrefix + "failed to create week plan", e);
       new Notice(UI.errorCreateGoal);
