@@ -319,35 +319,39 @@ class MissionControlView extends ItemView {
 
   async updateGoalStatus(goal: GoalEntry, status: GoalStatus, dropReason?: DropReason) {
     const content = await this.plugin.app.vault.read(goal.file);
-    const fm = this.plugin.app.metadataCache.getFileCache(goal.file)?.frontmatter || {};
-    
-    fm.status = status;
-    if (status === "dropped" && dropReason) {
-      fm.dropReason = dropReason;
-    }
-    if (status === "active") {
-      delete fm.dropReason;
-    }
-    if (status === "fulfilled") {
-      delete fm.dropReason;
-    }
-
-    const newContent = this.rebuildFrontmatter(content, fm);
+    const newContent = this.patchFrontmatter(content, status, dropReason);
     await this.plugin.app.vault.modify(goal.file, newContent);
   }
 
-  rebuildFrontmatter(content: string, fm: Record<string, any>): string {
-    // Remove existing frontmatter
-    const withoutFm = content.replace(/^---\n[\s\S]*?\n---\n?/, "").trim();
-    
-    // Build new frontmatter
-    let yaml = "---\n";
-    for (const [key, value] of Object.entries(fm)) {
-      yaml += `${key}: ${JSON.stringify(value)}\n`;
+  patchFrontmatter(content: string, status: GoalStatus, dropReason?: DropReason): string {
+    const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
+    if (!fmMatch) return content;
+
+    const fmBlock = fmMatch[1];
+    const before = content.substring(0, fmMatch.index!);
+    const after = content.substring(fmMatch.index! + fmMatch[0].length);
+
+    let lines = fmBlock.split("\n");
+    const hasStatus = lines.some(l => /^\s*status:/.test(l));
+    const hasDropReason = lines.some(l => /^\s*dropReason:/.test(l));
+
+    if (hasStatus) {
+      lines = lines.map(l => /^\s*status:/.test(l) ? `status: ${status}` : l);
+    } else {
+      lines.push(`status: ${status}`);
     }
-    yaml += "---\n\n";
-    
-    return yaml + withoutFm;
+
+    if (status === "dropped" && dropReason) {
+      if (hasDropReason) {
+        lines = lines.map(l => /^\s*dropReason:/.test(l) ? `dropReason: ${dropReason}` : l);
+      } else {
+        lines.push(`dropReason: ${dropReason}`);
+      }
+    } else {
+      lines = lines.filter(l => !/^\s*dropReason:/.test(l));
+    }
+
+    return before + "---\n" + lines.join("\n") + "\n---" + after;
   }
 
   openGoalCreator() {

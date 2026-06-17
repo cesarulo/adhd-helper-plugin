@@ -10,7 +10,7 @@ Check off when done, add notes as needed.
 
 ### P0-1: Fix YAML serialization in `rebuildFrontmatter`
 
-- [ ] **Assigned:** ___
+- [x] **Assigned:** cesarulo
 
 **What's broken:** `JSON.stringify(value)` on line 346 of `main.ts` produces
 JSON, not YAML. A `recurringTasks` array becomes
