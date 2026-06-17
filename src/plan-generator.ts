@@ -25,7 +25,7 @@ export function todayDayName(): string {
  * @param areas Active goals grouped by area
  * @param prepopulatedAreas Optional list of area names to pre-fill in daily sections
  */
-export function weekPlanContent(areas: AreaSummary[], prepopulatedAreas?: string[]): string {
+export function weekPlanContent(areas: AreaSummary[], prepopulatedByDay?: Map<string, string[]>): string {
   let md = "# Objetivos Semanales\n";
   for (const area of areas) {
     const activeGoals = area.goals.filter(g => g.fm.status === "active");
@@ -37,15 +37,12 @@ export function weekPlanContent(areas: AreaSummary[], prepopulatedAreas?: string
   }
   md += "\n";
 
-  const areasToPrepopulate = prepopulatedAreas && prepopulatedAreas.length > 0
-    ? prepopulatedAreas
-    : null;
-
   for (const dayName of UI.dayNames) {
     md += `# ${dayName}\n`;
     md += "## Objetivos por Área\n";
-    if (areasToPrepopulate) {
-      for (const areaName of areasToPrepopulate) {
+    const dayAreas = prepopulatedByDay?.get(dayName);
+    if (dayAreas && dayAreas.length > 0) {
+      for (const areaName of dayAreas) {
         md += `- ${areaName}\n`;
       }
     }

@@ -55,14 +55,22 @@ describe("weekPlanContent", () => {
     expect(content).toContain("## Horarios");
   });
 
-  it("prepopulates area headers when prepopulatedAreas provided", () => {
-    const content = weekPlanContent([], ["FÍSICA", "MENTAL"]);
+  it("prepopulates area headers when prepopulatedByDay provided", () => {
+    const byDay = new Map([
+      ["Lunes", ["FÍSICA", "MENTAL"]],
+      ["Martes", ["TRÁMITES"]],
+    ]);
+    const content = weekPlanContent([], byDay);
     const lines = content.split("\n");
     const lunesIdx = lines.findIndex(l => l === "# Lunes");
-    // After Lunes header, next lines should be prepopulated areas
-    const postLunesSection = lines.slice(lunesIdx + 1).join("\n");
-    expect(postLunesSection).toContain("- FÍSICA");
-    expect(postLunesSection).toContain("- MENTAL");
+    const postLunes = lines.slice(lunesIdx + 1).join("\n");
+    expect(postLunes).toContain("- FÍSICA");
+    expect(postLunes).toContain("- MENTAL");
+
+    const martesIdx = lines.findIndex(l => l === "# Martes");
+    const postMartes = lines.slice(martesIdx + 1).join("\n");
+    expect(postMartes).toContain("- TRÁMITES");
+    expect(postMartes).not.toContain("- FÍSICA");
   });
 });
 
@@ -128,8 +136,11 @@ describe("weekPlanPath", () => {
 });
 
 describe("accented area names in prepopulation", () => {
-  it("handles accented area names in prepopulatedAreas", () => {
-    const content = weekPlanContent([], ["FÍSICA", "TRÁMITES", "REALIZACIONAL"]);
+  it("handles accented area names in prepopulatedByDay", () => {
+    const byDay = new Map([
+      ["Lunes", ["FÍSICA", "TRÁMITES", "REALIZACIONAL"]],
+    ]);
+    const content = weekPlanContent([], byDay);
     expect(content).toContain("- FÍSICA");
     expect(content).toContain("- TRÁMITES");
     expect(content).toContain("- REALIZACIONAL");

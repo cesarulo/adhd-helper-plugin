@@ -5,7 +5,7 @@ import { weekPlanPath, weekPlanContent } from "./plan-generator";
 import { ensureFolder } from "./plugin";
 import { DropReasonModal } from "./drop-reason-modal";
 import { patchFrontmatter } from "./frontmatter";
-import { getScoredAreas } from "./dataview";
+import { getScoredAreas, getScoredAreasByDay } from "./dataview";
 import { groupByArea } from "./stats";
 
 export const VIEW_TYPE_MISSION_CONTROL = "adhd-mission-control";
@@ -293,9 +293,12 @@ Describe your goal here.
       return;
     }
 
-    const scored = await getScoredAreas(this.plugin.app);
-    const prepopulatedAreas = scored.length > 0 ? scored.map(s => s.area) : undefined;
-    const content = weekPlanContent(areas, prepopulatedAreas);
+    const scoredByDay = await getScoredAreasByDay(this.plugin.app);
+    const prepopulatedByDay = new Map<string, string[]>();
+    for (const [day, scored] of scoredByDay) {
+      prepopulatedByDay.set(day, scored.map(s => s.area));
+    }
+    const content = weekPlanContent(areas, prepopulatedByDay.size > 0 ? prepopulatedByDay : undefined);
     try {
       const dir = path.substring(0, path.lastIndexOf("/"));
       await ensureFolder(this.plugin.app.vault, dir);
