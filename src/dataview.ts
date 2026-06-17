@@ -40,8 +40,8 @@ export async function getScoredAreas(app: App, topN = 6): Promise<ScoredArea[]> 
       const objSection = content.match(/# Objetivos Semanales\n([\s\S]*?)(?=\n# |$)/);
       if (objSection) {
         for (const line of objSection[1].split("\n")) {
-          const match = line.match(/^- (\w+)/);
-          if (match) areaNames.push(match[1]);
+          const match = line.match(/^- (.+)$/);
+          if (match) areaNames.push(match[1].trim());
         }
       }
 
@@ -50,8 +50,8 @@ export async function getScoredAreas(app: App, topN = 6): Promise<ScoredArea[]> 
       if (dailyAreas) {
         for (const section of dailyAreas) {
           for (const line of section.split("\n")) {
-            const match = line.match(/^- (\w+)/);
-            if (match && !areaNames.includes(match[1])) areaNames.push(match[1]);
+            const match = line.match(/^- (.+)$/);
+            if (match && !areaNames.includes(match[1].trim())) areaNames.push(match[1].trim());
           }
         }
       }
