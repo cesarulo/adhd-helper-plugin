@@ -1,4 +1,4 @@
-import { App, Modal, Plugin, PluginSettingTab, Setting, WorkspaceLeaf, ItemView, TFile, Notice } from "obsidian";
+import { App, Modal, Plugin, PluginSettingTab, Setting, WorkspaceLeaf, ItemView, TFile, Vault, Notice } from "obsidian";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -97,6 +97,17 @@ function weekPlanPath(): string {
 function todayDayName(): string {
   const day = new Date().getDay();
   return UI.dayNames[day === 0 ? 6 : day - 1];
+}
+
+async function ensureFolder(vault: Vault, fullPath: string) {
+  const parts = fullPath.split("/");
+  let current = "";
+  for (const part of parts) {
+    current += (current ? "/" : "") + part;
+    if (!vault.getAbstractFileByPath(current)) {
+      await vault.createFolder(current);
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -478,9 +489,7 @@ Describe your goal here.
     const content = this.weekPlanContent(areas);
     try {
       const dir = path.substring(0, path.lastIndexOf("/"));
-      if (!this.plugin.app.vault.getAbstractFileByPath(dir)) {
-        await this.plugin.app.vault.createFolder(dir);
-      }
+      await ensureFolder(this.plugin.app.vault, dir);
       const file = await this.plugin.app.vault.create(path, content);
       await this.plugin.app.workspace.openLinkText(file.path, "", false);
     } catch (e) {
@@ -873,10 +882,7 @@ export default class ADHDHelperPlugin extends Plugin {
     } else {
       // Create new week plan with just today's tasks
       const dir = path.substring(0, path.lastIndexOf("/"));
-      const dirObj = this.app.vault.getAbstractFileByPath(dir);
-      if (!dirObj) {
-        await this.app.vault.createFolder(dir);
-      }
+      await ensureFolder(this.app.vault, dir);
       const file = await this.app.vault.create(path, section);
       await this.app.workspace.openLinkText(file.path, "", false);
     }
