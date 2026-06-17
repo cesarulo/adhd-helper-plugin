@@ -11,7 +11,7 @@ export function weekPlanPath(): string {
   const m = String(monday.getMonth() + 1).padStart(2, "0");
   const d = String(monday.getDate()).padStart(2, "0");
   const quarter = Math.ceil((monday.getMonth() + 1) / 3);
-  return `Planeamiento/${y}/${y}-Q${quarter}/Semana ${y}-${m}-${d}.md`;
+  return `1 - Planeamiento/${y}/${y}-Q${quarter}/Semana ${y}-${m}-${d}.md`;
 }
 
 /** Spanish day name for today (Monday = Lunes) */

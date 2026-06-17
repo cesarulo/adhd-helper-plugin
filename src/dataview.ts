@@ -23,7 +23,7 @@ export async function getScoredAreas(app: App, topN = 6): Promise<ScoredArea[]> 
     return [];
   }
 
-  const pages = dv.pages('"Planeamiento"').where((p: any) => p.file.name.startsWith("Semana"));
+  const pages = dv.pages('"1 - Planeamiento"').where((p: any) => p.file.name.startsWith("Semana"));
   const plans: { weekMonday: Date; areaNames: string[] }[] = [];
 
   for (const page of pages) {
