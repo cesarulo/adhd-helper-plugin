@@ -288,7 +288,7 @@ Describe your goal here.
     const path = weekPlanPath();
     const existsOnDisk = await this.plugin.app.vault.adapter.exists(path);
     if (existsOnDisk) {
-      new Notice(UI.weekExists(path));
+      this.plugin.app.workspace.openLinkText(path, "", false);
       return;
     }
 
