@@ -1,4 +1,4 @@
-import { GoalEntry, PortfolioStats, ScoredArea } from "./types";
+import { GoalEntry, PortfolioStats, ScoredArea, AreaSummary } from "./types";
 
 const DEFAULT_DECAY_FACTOR = 0.85;
 
@@ -83,4 +83,26 @@ export function computePortfolioStats(goals: GoalEntry[]): PortfolioStats {
     nonDeferrable,
     dropReasons,
   };
+}
+
+/** Group goals by area name. Pure function — testable. */
+export function groupByArea(goals: GoalEntry[]): AreaSummary[] {
+  const map = new Map<string, GoalEntry[]>();
+  for (const g of goals) {
+    const area = g.fm.area || "Uncategorized";
+    if (!map.has(area)) map.set(area, []);
+    map.get(area)!.push(g);
+  }
+  const summaries: AreaSummary[] = [];
+  for (const [name, areaGoals] of map) {
+    summaries.push({
+      name,
+      activeCount: areaGoals.filter(g => g.fm.status === "active").length,
+      droppedCount: areaGoals.filter(g => g.fm.status === "dropped").length,
+      fulfilledCount: areaGoals.filter(g => g.fm.status === "fulfilled").length,
+      goals: areaGoals,
+    });
+  }
+  summaries.sort((a, b) => b.activeCount - a.activeCount);
+  return summaries;
 }

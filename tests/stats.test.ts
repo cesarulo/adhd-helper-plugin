@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { scoredAreaFrequencies, computePortfolioStats } from "../src/stats";
+import { scoredAreaFrequencies, computePortfolioStats, groupByArea } from "../src/stats";
 import { GoalEntry } from "../src/types";
 
 describe("scoredAreaFrequencies", () => {
@@ -143,5 +143,60 @@ describe("computePortfolioStats", () => {
     ];
     const stats = computePortfolioStats(goals);
     expect(stats.byArea.get("Uncategorized")?.active).toBe(1);
+  });
+});
+
+describe("groupByArea", () => {
+  function g(title: string, area: string, status: "active" | "dropped" | "fulfilled" = "active"): GoalEntry {
+    return { title, path: "", fm: { area, origin: "endogenous", cadence: "recurring", status } };
+  }
+
+  it("groups goals by area and sorts by active count desc", () => {
+    const goals = [
+      g("A1", "FÍSICA", "active"),
+      g("A2", "FÍSICA", "active"),
+      g("B1", "MENTAL", "active"),
+    ];
+    const areas = groupByArea(goals);
+    expect(areas).toHaveLength(2);
+    expect(areas[0].name).toBe("FÍSICA");
+    expect(areas[0].activeCount).toBe(2);
+    expect(areas[1].name).toBe("MENTAL");
+    expect(areas[1].activeCount).toBe(1);
+  });
+
+  it("counts dropped and fulfilled correctly", () => {
+    const goals = [
+      g("X", "ÁREA", "active"),
+      g("Y", "ÁREA", "dropped"),
+      g("Z", "ÁREA", "fulfilled"),
+    ];
+    const areas = groupByArea(goals);
+    expect(areas[0].activeCount).toBe(1);
+    expect(areas[0].droppedCount).toBe(1);
+    expect(areas[0].fulfilledCount).toBe(1);
+  });
+
+  it("handles empty area names as Uncategorized", () => {
+    const goals = [g("X", "", "active")];
+    const areas = groupByArea(goals);
+    expect(areas[0].name).toBe("Uncategorized");
+  });
+
+  it("handles accented area names", () => {
+    const goals = [
+      g("X", "FÍSICA"),
+      g("Y", "TRÁMITES"),
+      g("Z", "REALIZACIONAL"),
+    ];
+    const areas = groupByArea(goals);
+    const names = areas.map(a => a.name).sort();
+    expect(names).toContain("FÍSICA");
+    expect(names).toContain("TRÁMITES");
+    expect(names).toContain("REALIZACIONAL");
+  });
+
+  it("returns empty array for no goals", () => {
+    expect(groupByArea([])).toEqual([]);
   });
 });

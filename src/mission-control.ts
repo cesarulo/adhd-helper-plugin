@@ -6,6 +6,7 @@ import { ensureFolder } from "./plugin";
 import { DropReasonModal } from "./drop-reason-modal";
 import { patchFrontmatter } from "./frontmatter";
 import { getScoredAreas } from "./dataview";
+import { groupByArea } from "./stats";
 
 export const VIEW_TYPE_MISSION_CONTROL = "adhd-mission-control";
 
@@ -49,7 +50,7 @@ export class MissionControlView extends ItemView {
     container.addClass("adhd-mission-control");
 
     const goals = await this.plugin.loadGoals();
-    const areas = this.groupByArea(goals);
+    const areas = groupByArea(goals);
 
     if (areas.length === 0) {
       const empty = container.createDiv("adhd-mc-empty");
@@ -284,7 +285,7 @@ Describe your goal here.
 
   private async planThisWeek() {
     const goals = await this.plugin.loadGoals();
-    const areas = this.groupByArea(goals);
+    const areas = groupByArea(goals);
     const path = weekPlanPath();
     const existsOnDisk = await this.plugin.app.vault.adapter.exists(path);
     if (existsOnDisk) {
@@ -306,23 +307,6 @@ Describe your goal here.
     }
   }
 
-  groupByArea(goals: GoalEntry[]): AreaSummary[] {
-    const map = new Map<string, GoalEntry[]>();
-    for (const g of goals) {
-      const area = g.fm.area || "Uncategorized";
-      if (!map.has(area)) map.set(area, []);
-      map.get(area)!.push(g);
-    }
-    const summaries: AreaSummary[] = [];
-    for (const [name, areaGoals] of map) {
-      summaries.push({
-        name,
-        activeCount: areaGoals.filter(g => g.fm.status === "active").length,
-        droppedCount: areaGoals.filter(g => g.fm.status === "dropped").length,
-        fulfilledCount: areaGoals.filter(g => g.fm.status === "fulfilled").length,
-        goals: areaGoals,
-      });
-    }
     summaries.sort((a, b) => b.activeCount - a.activeCount);
     return summaries;
   }
