@@ -306,8 +306,4 @@ Describe your goal here.
       new Notice(UI.errorCreateGoal);
     }
   }
-
-    summaries.sort((a, b) => b.activeCount - a.activeCount);
-    return summaries;
-  }
 }
