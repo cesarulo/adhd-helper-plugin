@@ -89,17 +89,31 @@ class MissionControlView extends ItemView {
     const goals = await this.plugin.loadGoals();
     const areas = this.groupByArea(goals);
 
-    // --- Sticky top bar ---
     const topBar = container.createDiv("adhd-mc-top-bar");
+    this.renderHeader(topBar);
+    this.renderAreaCards(topBar, areas);
 
+    for (const area of areas) {
+      this.renderAreaSection(container, area);
+    }
+
+    const addBtn = container.createDiv("adhd-mc-add-btn");
+    addBtn.createEl("button", {
+      text: "+ Add Goal",
+      cls: "mod-cta"
+    }).addEventListener("click", () => this.openGoalCreator());
+  }
+
+  private renderHeader(topBar: HTMLElement) {
     const header = topBar.createDiv("adhd-mc-header");
     header.createEl("h2", { text: "Mission Control" });
     header.createEl("p", { 
       text: "What are you working toward? What have you let go of?",
       cls: "adhd-mc-subtitle" 
     });
+  }
 
-    // --- Area overview cards ---
+  private renderAreaCards(topBar: HTMLElement, areas: AreaSummary[]) {
     const areaRow = topBar.createDiv("adhd-mc-area-row");
     for (const area of areas) {
       const card = areaRow.createDiv("adhd-mc-area-card");
@@ -119,18 +133,6 @@ class MissionControlView extends ItemView {
         });
       }
     }
-
-    // --- Per-area goal sections ---
-    for (const area of areas) {
-      this.renderAreaSection(container, area);
-    }
-
-    // --- Add goal button ---
-    const addBtn = container.createDiv("adhd-mc-add-btn");
-    addBtn.createEl("button", {
-      text: "+ Add Goal",
-      cls: "mod-cta"
-    }).addEventListener("click", () => this.openGoalCreator());
   }
 
   renderAreaSection(container: HTMLElement, area: AreaSummary) {
