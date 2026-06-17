@@ -484,6 +484,8 @@ Describe your goal here.
       new Notice(UI.errorCreateGoal);
     }
   }
+
+  private weekPlanContent(areas: AreaSummary[]): string {
     let md = "# Objetivos Semanales\n";
     for (const area of areas) {
       const activeGoals = area.goals.filter(g => g.fm.status === "active");
