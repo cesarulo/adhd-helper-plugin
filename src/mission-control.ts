@@ -286,8 +286,8 @@ Describe your goal here.
     const goals = await this.plugin.loadGoals();
     const areas = this.groupByArea(goals);
     const path = weekPlanPath();
-    const exists = this.plugin.app.vault.getAbstractFileByPath(path);
-    if (exists) {
+    const existsOnDisk = await this.plugin.app.vault.adapter.exists(path);
+    if (existsOnDisk) {
       new Notice(UI.weekExists(path));
       return;
     }
