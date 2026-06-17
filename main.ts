@@ -37,6 +37,8 @@ const UI = {
   planWeek: "Plan This Week",
   weekExists: (path: string) => `Week plan already exists: ${path}`,
   dayNames: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"],
+  dashboardTitle: "Dashboard",
+  dashboardTotal: "Total goals: ",
 };
 
 type Origin = "endogenous" | "exogenous";
@@ -531,6 +533,104 @@ Describe your goal here.
 }
 
 // ---------------------------------------------------------------------------
+// Dashboard View
+// ---------------------------------------------------------------------------
+
+const VIEW_TYPE_DASHBOARD = "adhd-dashboard";
+
+class DashboardView extends ItemView {
+  plugin: ADHDHelperPlugin;
+
+  constructor(leaf: WorkspaceLeaf, plugin: ADHDHelperPlugin) {
+    super(leaf);
+    this.plugin = plugin;
+  }
+
+  getViewType(): string { return VIEW_TYPE_DASHBOARD; }
+  getDisplayText(): string { return UI.dashboardTitle; }
+  getIcon(): string { return "bar-chart-3"; }
+
+  async onOpen() {
+    this.registerEvent(
+      this.plugin.app.vault.on("modify", (file) => {
+        if (file instanceof TFile && file.path.startsWith(GOALS_FOLDER + "/")) {
+          this.render();
+        }
+      })
+    );
+    await this.render();
+  }
+
+  async render() {
+    const container = this.containerEl.children[1] as HTMLElement;
+    container.empty();
+    container.addClass("adhd-dashboard");
+
+    const goals = await this.plugin.loadGoals();
+    const total = goals.length;
+
+    container.createEl("h2", { text: UI.dashboardTitle });
+    container.createEl("p", { text: UI.dashboardTotal + total, cls: "adhd-db-subtitle" });
+    if (total === 0) return;
+
+    // By area
+    const areas = new Map<string, { active: number; dropped: number; fulfilled: number }>();
+    let endogenous = 0, exogenous = 0;
+    let recurring = 0, oneOff = 0;
+    let deferrable = 0, nonDeferrable = 0;
+    const dropReasons = new Map<string, number>();
+
+    for (const g of goals) {
+      const a = g.fm.area || "Uncategorized";
+      if (!areas.has(a)) areas.set(a, { active: 0, dropped: 0, fulfilled: 0 });
+      const entry = areas.get(a)!;
+      if (g.fm.status === "active") entry.active++;
+      else if (g.fm.status === "dropped") entry.dropped++;
+      else entry.fulfilled++;
+
+      if (g.fm.origin === "endogenous") endogenous++; else exogenous++;
+      if (g.fm.cadence === "recurring") recurring++; else oneOff++;
+      // deferrability from frontmatter (not yet a formal field, check if exists)
+      const def = (g.fm as any).deferrability;
+      if (def === "non-deferrable") nonDeferrable++; else deferrable++;
+      if (g.fm.dropReason) {
+        dropReasons.set(g.fm.dropReason, (dropReasons.get(g.fm.dropReason) || 0) + 1);
+      }
+    }
+
+    this.renderSection(container, UI.dashboardAreas, 
+      [...areas.entries()].map(([name, c]) => `${name}: ${c.active}A / ${c.dropped}D / ${c.fulfilled}F`));
+
+    this.renderSection(container, UI.dashboardOrigin,
+      [`${UI.dashboardEndogenous}: ${endogenous} (${Math.round(endogenous/total*100)}%)`,
+       `${UI.dashboardExogenous}: ${exogenous} (${Math.round(exogenous/total*100)}%)`]);
+
+    this.renderSection(container, UI.dashboardCadence,
+      [`${UI.dashboardRecurring}: ${recurring}`,
+       `${UI.dashboardOneOff}: ${oneOff}`]);
+
+    if (nonDeferrable > 0 || deferrable > 0) {
+      this.renderSection(container, UI.dashboardDeferrability || "By Deferrability",
+        [`${UI.dashboardDeferrable || "Deferrable"}: ${deferrable}`,
+         `${UI.dashboardNonDeferrable || "Non-deferrable"}: ${nonDeferrable}`]);
+    }
+
+    if (dropReasons.size > 0) {
+      this.renderSection(container, UI.dashboardDropped || "Dropped Goals",
+        [...dropReasons.entries()].map(([r, n]) => `${r}: ${n}`));
+    }
+  }
+
+  private renderSection(container: HTMLElement, title: string, items: string[]) {
+    const section = container.createDiv("adhd-db-section");
+    section.createEl("h4", { text: title });
+    for (const item of items) {
+      section.createEl("div", { text: item, cls: "adhd-db-item" });
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Drop Reason Modal
 // ---------------------------------------------------------------------------
 
@@ -618,6 +718,10 @@ export default class ADHDHelperPlugin extends Plugin {
       VIEW_TYPE_MISSION_CONTROL,
       (leaf) => new MissionControlView(leaf, this)
     );
+    this.registerView(
+      VIEW_TYPE_DASHBOARD,
+      (leaf) => new DashboardView(leaf, this)
+    );
 
     // Ribbon icon
     this.addRibbonIcon("target", "ADHD Mission Control", () => {
@@ -629,6 +733,16 @@ export default class ADHDHelperPlugin extends Plugin {
       id: "open-mission-control",
       name: "Open Mission Control",
       callback: () => this.activateView(),
+    });
+
+    // Dashboard
+    this.addRibbonIcon("bar-chart-3", "ADHD Dashboard", () => {
+      this.activateDashboard();
+    });
+    this.addCommand({
+      id: "open-dashboard",
+      name: "Open Dashboard",
+      callback: () => this.activateDashboard(),
     });
 
     // Settings tab
@@ -647,25 +761,27 @@ export default class ADHDHelperPlugin extends Plugin {
 
   onunload() {
     this.app.workspace.detachLeavesOfType(VIEW_TYPE_MISSION_CONTROL);
+    this.app.workspace.detachLeavesOfType(VIEW_TYPE_DASHBOARD);
   }
 
   async activateView() {
-    const { workspace } = this.app;
-    let leaf: WorkspaceLeaf | null = workspace.getLeavesOfType(VIEW_TYPE_MISSION_CONTROL)[0] ?? null;
+    await this.openView(VIEW_TYPE_MISSION_CONTROL);
+  }
 
+  async activateDashboard() {
+    await this.openView(VIEW_TYPE_DASHBOARD);
+  }
+
+  private async openView(viewType: string) {
+    const { workspace } = this.app;
+    let leaf: WorkspaceLeaf | null = workspace.getLeavesOfType(viewType)[0] ?? null;
     if (!leaf) {
       leaf = workspace.getRightLeaf(false);
       if (leaf) {
-        await leaf.setViewState({
-          type: VIEW_TYPE_MISSION_CONTROL,
-          active: true,
-        });
+        await leaf.setViewState({ type: viewType, active: true });
       }
     }
-
-    if (leaf) {
-      workspace.revealLeaf(leaf);
-    }
+    if (leaf) workspace.revealLeaf(leaf);
   }
 
   async loadSettings() {
