@@ -556,14 +556,8 @@ export default class ADHDHelperPlugin extends Plugin {
     const folder = this.pluginSettings.goalsFolder;
     const goals: GoalEntry[] = [];
 
-    // Check if folder exists
-    const folderObj = this.app.vault.getAbstractFileByPath(folder);
-    if (!folderObj || !(folderObj as any).children) return goals;
-
-    // Read all markdown files in the folder
-    const files = (folderObj as any).children.filter(
-      (f: any) => f instanceof TFile && f.extension === "md"
-    ) as TFile[];
+    const files = this.app.vault.getMarkdownFiles()
+      .filter(f => f.path.startsWith(folder + "/"));
 
     for (const file of files) {
       const cache = this.app.metadataCache.getFileCache(file);
