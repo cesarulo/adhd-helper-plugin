@@ -34,6 +34,9 @@ const UI = {
   errorUpdateGoal: "Could not update goal — check the console for details.",
   errorCreateGoal: "Could not create goal — check the console for details.",
   logPrefix: "ADHD Helper: ",
+  planWeek: "Plan This Week",
+  weekExists: (path: string) => `Week plan already exists: ${path}`,
+  dayNames: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"],
 };
 
 type Origin = "endogenous" | "exogenous";
@@ -153,6 +156,12 @@ class MissionControlView extends ItemView {
       text: UI.addGoal,
       cls: "mod-cta"
     }).addEventListener("click", () => this.openGoalCreator());
+
+    const planBtn = container.createDiv("adhd-mc-add-btn");
+    planBtn.createEl("button", {
+      text: UI.planWeek,
+      cls: "mod-cta"
+    }).addEventListener("click", () => this.planThisWeek());
   }
 
   private renderHeader(topBar: HTMLElement) {
@@ -438,6 +447,58 @@ Describe your goal here.
       console.error(UI.logPrefix + "failed to create goal file", e);
       new Notice(UI.errorCreateGoal);
     });
+  }
+
+  private weekPlanPath(): string {
+    const now = new Date();
+    // Monday of current week
+    const day = now.getDay();
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+    const y = monday.getFullYear();
+    const m = String(monday.getMonth() + 1).padStart(2, "0");
+    const d = String(monday.getDate()).padStart(2, "0");
+    const quarter = Math.ceil((monday.getMonth() + 1) / 3);
+    return `Planeamiento/${y}/${y}-Q${quarter}/Semana ${y}-${m}-${d}.md`;
+  }
+
+  private weekPlanContent(areas: AreaSummary[]): string {
+    let md = "# Objetivos Semanales\n";
+    for (const area of areas) {
+      const activeGoals = area.goals.filter(g => g.fm.status === "active");
+      if (activeGoals.length === 0) continue;
+      md += `- ${area.name}\n`;
+      for (const goal of activeGoals) {
+        md += `\t- ${goal.title}\n`;
+      }
+    }
+    md += "\n";
+    for (const dayName of UI.dayNames) {
+      md += `# ${dayName}\n`;
+      md += "## Objetivos por Área\n";
+      md += "## Horarios\n";
+      md += "- \n\n";
+    }
+    return md;
+  }
+
+  private async planThisWeek() {
+    const goals = await this.plugin.loadGoals();
+    const areas = this.groupByArea(goals);
+    const path = this.weekPlanPath();
+    const exists = this.plugin.app.vault.getAbstractFileByPath(path);
+    if (exists) {
+      new Notice(UI.weekExists(path));
+      return;
+    }
+    const content = this.weekPlanContent(areas);
+    try {
+      const file = await this.plugin.app.vault.create(path, content);
+      await this.plugin.app.workspace.openLinkText(file.path, "", false);
+    } catch (e) {
+      console.error(UI.logPrefix + "failed to create week plan", e);
+      new Notice(UI.errorCreateGoal);
+    }
   }
 
   groupByArea(goals: GoalEntry[]): AreaSummary[] {
