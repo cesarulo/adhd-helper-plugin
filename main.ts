@@ -477,6 +477,10 @@ Describe your goal here.
     }
     const content = this.weekPlanContent(areas);
     try {
+      const dir = path.substring(0, path.lastIndexOf("/"));
+      if (!this.plugin.app.vault.getAbstractFileByPath(dir)) {
+        await this.plugin.app.vault.createFolder(dir);
+      }
       const file = await this.plugin.app.vault.create(path, content);
       await this.plugin.app.workspace.openLinkText(file.path, "", false);
     } catch (e) {
