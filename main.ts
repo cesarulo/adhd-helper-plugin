@@ -256,7 +256,7 @@ class MissionControlView extends ItemView {
     row1.createEl("span", { text: cadLabel, cls: "adhd-mc-badge adhd-mc-badge-cadence" });
 
     // Recurring tasks
-    if (goal.fm.cadence === "recurring" && goal.fm.recurringTasks && goal.fm.recurringTasks.length > 0) {
+    if (goal.fm.cadence === "recurring" && goal.fm.recurringTasks && Array.isArray(goal.fm.recurringTasks) && goal.fm.recurringTasks.length > 0) {
       const tasksSection = card.createDiv("adhd-mc-recurring-tasks");
       tasksSection.createEl("small", { text: UI.taskLabel, cls: "adhd-mc-tasks-label" });
       for (const task of goal.fm.recurringTasks) {
