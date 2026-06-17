@@ -61,6 +61,10 @@ class MissionControlView extends ItemView {
     this.plugin = plugin;
   }
 
+  private sectionIdFor(areaName: string): string {
+    return "adhd-mc-section-" + areaName.replace(/[^a-zA-Z0-9]/g, "-");
+  }
+
   getViewType(): string {
     return VIEW_TYPE_MISSION_CONTROL;
   }
@@ -99,7 +103,7 @@ class MissionControlView extends ItemView {
     const areaRow = topBar.createDiv("adhd-mc-area-row");
     for (const area of areas) {
       const card = areaRow.createDiv("adhd-mc-area-card");
-      const sectionId = "adhd-mc-section-" + area.name.replace(/[^a-zA-Z0-9]/g, "-");
+      const sectionId = this.sectionIdFor(area.name);
       card.addEventListener("click", () => {
         document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth", block: "start" });
       });
@@ -130,7 +134,7 @@ class MissionControlView extends ItemView {
   }
 
   renderAreaSection(container: HTMLElement, area: AreaSummary) {
-    const sectionId = "adhd-mc-section-" + area.name.replace(/[^a-zA-Z0-9]/g, "-");
+    const sectionId = this.sectionIdFor(area.name);
     const section = container.createDiv("adhd-mc-area-section");
     section.id = sectionId;
 
