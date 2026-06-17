@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { weekPlanContent, buildDaySection } from "../src/plan-generator";
-import { AreaSummary, GoalEntry } from "../src/types";
+import { AreaSummary, GoalEntry, GoalStatus } from "../src/types";
 
-function makeGoal(title: string, area: string, status = "active" as const): GoalEntry {
+function makeGoal(title: string, area: string, status: GoalStatus = "active"): GoalEntry {
   return {
     title, path: "",
     fm: { area, origin: "endogenous", cadence: "recurring", status },
