@@ -82,6 +82,23 @@ interface AreaSummary {
 
 const VIEW_TYPE_MISSION_CONTROL = "adhd-mission-control";
 
+function weekPlanPath(): string {
+  const now = new Date();
+  const day = now.getDay();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+  const y = monday.getFullYear();
+  const m = String(monday.getMonth() + 1).padStart(2, "0");
+  const d = String(monday.getDate()).padStart(2, "0");
+  const quarter = Math.ceil((monday.getMonth() + 1) / 3);
+  return `Planeamiento/${y}/${y}-Q${quarter}/Semana ${y}-${m}-${d}.md`;
+}
+
+function todayDayName(): string {
+  const day = new Date().getDay();
+  return UI.dayNames[day === 0 ? 6 : day - 1];
+}
+
 // ---------------------------------------------------------------------------
 // Mission Control View
 // ---------------------------------------------------------------------------
@@ -449,20 +466,24 @@ Describe your goal here.
     });
   }
 
-  private weekPlanPath(): string {
-    const now = new Date();
-    // Monday of current week
-    const day = now.getDay();
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
-    const y = monday.getFullYear();
-    const m = String(monday.getMonth() + 1).padStart(2, "0");
-    const d = String(monday.getDate()).padStart(2, "0");
-    const quarter = Math.ceil((monday.getMonth() + 1) / 3);
-    return `Planeamiento/${y}/${y}-Q${quarter}/Semana ${y}-${m}-${d}.md`;
+  private async planThisWeek() {
+    const goals = await this.plugin.loadGoals();
+    const areas = this.groupByArea(goals);
+    const path = weekPlanPath();
+    const exists = this.plugin.app.vault.getAbstractFileByPath(path);
+    if (exists) {
+      new Notice(UI.weekExists(path));
+      return;
+    }
+    const content = this.weekPlanContent(areas);
+    try {
+      const file = await this.plugin.app.vault.create(path, content);
+      await this.plugin.app.workspace.openLinkText(file.path, "", false);
+    } catch (e) {
+      console.error(UI.logPrefix + "failed to create week plan", e);
+      new Notice(UI.errorCreateGoal);
+    }
   }
-
-  private weekPlanContent(areas: AreaSummary[]): string {
     let md = "# Objetivos Semanales\n";
     for (const area of areas) {
       const activeGoals = area.goals.filter(g => g.fm.status === "active");
@@ -480,25 +501,6 @@ Describe your goal here.
       md += "- \n\n";
     }
     return md;
-  }
-
-  private async planThisWeek() {
-    const goals = await this.plugin.loadGoals();
-    const areas = this.groupByArea(goals);
-    const path = this.weekPlanPath();
-    const exists = this.plugin.app.vault.getAbstractFileByPath(path);
-    if (exists) {
-      new Notice(UI.weekExists(path));
-      return;
-    }
-    const content = this.weekPlanContent(areas);
-    try {
-      const file = await this.plugin.app.vault.create(path, content);
-      await this.plugin.app.workspace.openLinkText(file.path, "", false);
-    } catch (e) {
-      console.error(UI.logPrefix + "failed to create week plan", e);
-      new Notice(UI.errorCreateGoal);
-    }
   }
 
   groupByArea(goals: GoalEntry[]): AreaSummary[] {
@@ -629,6 +631,16 @@ export default class ADHDHelperPlugin extends Plugin {
 
     // Settings tab
     this.addSettingTab(new ADHDHelperSettingTab(this.app, this));
+
+    // DayPopulator: ribbon + command
+    this.addRibbonIcon("list-plus", "Populate Today's Tasks", () => {
+      this.populateToday();
+    });
+    this.addCommand({
+      id: "populate-today",
+      name: "Populate Today's Tasks from Goals",
+      callback: () => this.populateToday(),
+    });
   }
 
   onunload() {
@@ -686,5 +698,67 @@ export default class ADHDHelperPlugin extends Plugin {
     }
 
     return goals;
+  }
+
+  async populateToday() {
+    const goals = await this.loadGoals();
+    const dayName = todayDayName();
+    const path = weekPlanPath();
+
+    // Collect timed + flex tasks from active recurring goals
+    const timedTasks: { desc: string; time: string; area: string }[] = [];
+    const flexByArea: Map<string, string[]> = new Map();
+
+    for (const goal of goals) {
+      if (goal.fm.status !== "active" || goal.fm.cadence !== "recurring") continue;
+      for (const task of goal.fm.recurringTasks || []) {
+        if (task.timing === "timed" && task.startTime) {
+          timedTasks.push({ desc: task.description, time: task.startTime, area: goal.fm.area });
+        } else {
+          if (!flexByArea.has(goal.fm.area)) flexByArea.set(goal.fm.area, []);
+          flexByArea.get(goal.fm.area)!.push(task.description);
+        }
+      }
+    }
+
+    // Build the today section
+    let section = `# ${dayName}\n`;
+    section += "## Objetivos por Área\n";
+    for (const [area, tasks] of flexByArea) {
+      section += `- ${area}\n`;
+      for (const t of tasks) {
+        section += `\t- ${t}\n`;
+      }
+    }
+    section += "## Horarios\n";
+    timedTasks.sort((a, b) => a.time.localeCompare(b.time));
+    for (const t of timedTasks) {
+      section += `- ${t.time} - ${t.desc}\n`;
+    }
+    section += "\n";
+
+    // Find or create the week plan file, then append
+    const exists = this.app.vault.getAbstractFileByPath(path);
+    if (exists && exists instanceof TFile) {
+      const content = await this.app.vault.read(exists);
+      // Replace existing day section if present
+      const dayRegex = new RegExp(`^# ${dayName}\\n([\\s\\S]*?)(?=\\n# |$)`, "m");
+      if (dayRegex.test(content)) {
+        const updated = content.replace(dayRegex, section.trimEnd());
+        await this.app.vault.modify(exists, updated);
+      } else {
+        await this.app.vault.modify(exists, content.trimEnd() + "\n\n" + section);
+      }
+      await this.app.workspace.openLinkText(path, "", false);
+    } else {
+      // Create new week plan with just today's tasks
+      const dir = path.substring(0, path.lastIndexOf("/"));
+      const dirObj = this.app.vault.getAbstractFileByPath(dir);
+      if (!dirObj) {
+        await this.app.vault.createFolder(dir);
+      }
+      const file = await this.app.vault.create(path, section);
+      await this.app.workspace.openLinkText(file.path, "", false);
+    }
   }
 }
