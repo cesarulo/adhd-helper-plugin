@@ -85,6 +85,7 @@ const VIEW_TYPE_MISSION_CONTROL = "adhd-mission-control";
 
 class MissionControlView extends ItemView {
   plugin: ADHDHelperPlugin;
+  private refreshTimer: number | null = null;
 
   constructor(leaf: WorkspaceLeaf, plugin: ADHDHelperPlugin) {
     super(leaf);
@@ -108,6 +109,14 @@ class MissionControlView extends ItemView {
   }
 
   async onOpen() {
+    this.registerEvent(
+      this.plugin.app.vault.on("modify", (file) => {
+        if (file instanceof TFile && file.path.startsWith(GOALS_FOLDER + "/")) {
+          if (this.refreshTimer) clearTimeout(this.refreshTimer);
+          this.refreshTimer = window.setTimeout(() => this.render(), 300);
+        }
+      })
+    );
     await this.render();
   }
 
